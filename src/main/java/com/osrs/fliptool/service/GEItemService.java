@@ -9,22 +9,23 @@ import java.util.List;
 import com.osrs.fliptool.service.exception.ApiUrlConnectionException;
 import com.osrs.fliptool.service.exception.ApiUrlCreationException;
 import org.json.JSONObject;
+import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Service;
 
 @Service
-public class FlipTool {
+public class GEItemService {
     private static final String API_HOST_URL = "https://rsbuddy.com/exchange/summary.json";
-    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
+    private static final String USER_AGENT_VALUE = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.95 Safari/537.11";
 
     private String proxyAddress;
     private int proxyPort;
     private boolean useProxy;
 
-    FlipTool(){
+    GEItemService(){
         useProxy = false;
     }
 
-    public FlipTool(String proxyAddress, int proxyPort){
+    public GEItemService(String proxyAddress, int proxyPort){
         this.proxyAddress = proxyAddress;
         this.proxyPort = proxyPort;
         useProxy = true;
@@ -36,27 +37,28 @@ public class FlipTool {
         JSONObject itemSummary = getItemList(API_HOST_URL, useProxy);
 
         for(String itemId : itemSummary.keySet()){
-            JSONObject item = itemSummary.getJSONObject(itemId);
+            JSONObject jsonItem = itemSummary.getJSONObject(itemId);
 
-            int buyAverage = item.getInt("buy_average");
-            int sellAverage = item.getInt("sell_average");
-            int buyQuantity = item.getInt("buy_quantity");
-            int sellQuantity = item.getInt("sell_quantity");
+            String itemName = jsonItem.getString("name");
+            int id = jsonItem.getInt("id");
+            int buyAverage = jsonItem.getInt("buy_average");
+            int sellAverage = jsonItem.getInt("sell_average");
+            int buyQuantity = jsonItem.getInt("buy_quantity");
+            int sellQuantity = jsonItem.getInt("sell_quantity");
+            boolean isMembers = jsonItem.getBoolean("members");
 
             if (buyAverage <= maxItemPrice) {
                 double profitPercent = getProfitPercent(buyAverage, sellAverage);
 
                 if (profitPercent >= minPercentMargin) {
-                    GEItem geitem = new GEItem(item.getString("name"),
-                                               item.getInt("id"),
+                    GEItem geitem = new GEItem(itemName,
+                                               id,
                                                buyAverage,
                                                sellAverage,
                                                buyQuantity,
                                                sellQuantity,
-                                               item.getBoolean("members"));
-
+                                               isMembers);
                     result.add(geitem);
-
                 }
             }
         }
@@ -80,20 +82,17 @@ public class FlipTool {
 
         HttpURLConnection connection = null;
         String line;
-        StringBuffer responseBuffer = new StringBuffer();
+        StringBuilder responseBuffer = new StringBuilder();
         BufferedReader in;
         try {
-            connection = useProxy ? openProxyConnection(url)
-                    : (HttpURLConnection) url.openConnection();
-
-            connection.setRequestProperty("User-Agent", USER_AGENT);
+            connection = useProxy ? openProxyConnection(url) : (HttpURLConnection) url.openConnection();
+            connection.setRequestProperty(HttpHeaders.USER_AGENT, USER_AGENT_VALUE);
             connection.connect();
 
             in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
             while ((line = in.readLine()) != null) {
                 responseBuffer.append(line);
             }
-
         } catch (IOException e) {
             throw new ApiUrlConnectionException("Unable to connect to provided URL: " + url, e);
         } finally {
@@ -112,6 +111,5 @@ public class FlipTool {
     private HttpURLConnection openProxyConnection(URL url) throws IOException {
         return (HttpURLConnection)url.openConnection(new Proxy(Proxy.Type.HTTP, new InetSocketAddress(proxyAddress, proxyPort)));
     }
-
 
 }

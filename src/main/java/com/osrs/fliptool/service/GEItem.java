@@ -79,17 +79,17 @@ public class GEItem {
         this.members = members;
     }
 
-    int getProfitGP(){
+    public int getProfitGP(){
         return sellAvg-buyAvg;
     }
 
-    int getProfitPercent(){
+    public int getProfitPercent(){
         double buy = buyAvg;
         double sell = sellAvg;
         return (int)(((sell-buy)/buy)*100);
     }
 
-    int getPotentialProfit(){
+    public int getPotentialProfit(){
         return Math.max(buyQuantity, sellQuantity) * this.getProfitGP();
     }
 

@@ -1,21 +1,25 @@
-package com.osrs.fliptool.service;
+package com.osrs.fliptool;
 
+import com.osrs.fliptool.service.GEItem;
+import com.osrs.fliptool.service.GEItemService;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.theme.Theme;
+import com.vaadin.flow.theme.lumo.Lumo;
 import org.springframework.beans.factory.annotation.Autowired;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 @Route("")
+@Theme(value = Lumo.class, variant = Lumo.DARK)
 public class MainView extends VerticalLayout {
     private static final String APP_TITLE = "OSRS Flipping Tool";
-    private static final String THEME_COLOR = "dark";
-
     private static final Map<ValueProvider<GEItem, ?>, String> COLUMN_HEADINGS;
     static {
         COLUMN_HEADINGS = new LinkedHashMap<>();
@@ -32,10 +36,10 @@ public class MainView extends VerticalLayout {
     private static final String OSBUDDY_API_URL = "https://rsbuddy.com/exchange";
 
     @Autowired
-    public MainView(FlipTool flipTool) {
-        setupTheme();
+    public MainView(GEItemService geItemService) {
+        setupView();
 
-        List<GEItem> items = getItems(flipTool);
+        List<GEItem> items = getItems(geItemService);
         Grid<GEItem> itemGrid = setupItemGrid(items);
 
         VerticalLayout layout = setupLayout();
@@ -45,19 +49,19 @@ public class MainView extends VerticalLayout {
         add(layout);
     }
 
-    private void setupTheme() {
-        getElement().setAttribute("theme", THEME_COLOR);
+    private void setupView() {
         setSizeFull();
     }
 
-    private List<GEItem> getItems(FlipTool flipTool) {
-        return flipTool.generateFlipList(Integer.MAX_VALUE, 0);
+    private List<GEItem> getItems(GEItemService GEItemService) {
+        return GEItemService.generateFlipList(Integer.MAX_VALUE, 0);
     }
 
     private Grid<GEItem> setupItemGrid(List<GEItem> items) {
         Grid<GEItem> itemGrid = initializeItemGrid(items);
         addColumnsToGrid(itemGrid);
         addShiftClickOpenItemEvent(itemGrid);
+        itemGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.MATERIAL_COLUMN_DIVIDERS);
         return itemGrid;
     }
 
