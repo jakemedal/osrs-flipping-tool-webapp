@@ -2,11 +2,16 @@ package com.osrs.fliptool;
 
 import com.osrs.fliptool.service.GEItem;
 import com.osrs.fliptool.service.GEItemService;
+import com.osrs.fliptool.service.exception.ApiUrlConnectionException;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridVariant;
 import com.vaadin.flow.component.html.H1;
+import com.vaadin.flow.component.html.H5;
+import com.vaadin.flow.component.html.IFrame;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.data.renderer.ComponentRenderer;
 import com.vaadin.flow.function.ValueProvider;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.Theme;
@@ -15,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 
 @Route("")
 @Theme(value = Lumo.class, variant = Lumo.DARK)
@@ -53,8 +59,15 @@ public class MainView extends VerticalLayout {
         setSizeFull();
     }
 
-    private List<GEItem> getItems(GEItemService GEItemService) {
-        return GEItemService.generateFlipList(Integer.MAX_VALUE, 0);
+    private List<GEItem> getItems(GEItemService geItemService) {
+        List<GEItem> geItems;
+        try {
+            geItems = geItemService.generateFlipList();
+        } catch (ApiUrlConnectionException e) {
+            geItems = geItemService.generateOfflineFlipList();
+            add(new H5("OSBuddy service is offline. Displaying test data."));
+        }
+        return geItems;
     }
 
     private Grid<GEItem> setupItemGrid(List<GEItem> items) {
@@ -62,7 +75,22 @@ public class MainView extends VerticalLayout {
         addColumnsToGrid(itemGrid);
         addShiftClickOpenItemEvent(itemGrid);
         itemGrid.addThemeVariants(GridVariant.LUMO_ROW_STRIPES, GridVariant.LUMO_WRAP_CELL_CONTENT, GridVariant.MATERIAL_COLUMN_DIVIDERS);
+        itemGrid.setItemDetailsRenderer(new ComponentRenderer<>(this::setupItemDetailsIFrame));
+        itemGrid.setMultiSort(true);
         return itemGrid;
+    }
+
+    private HorizontalLayout setupItemDetailsIFrame(GEItem item) {
+        IFrame osBuddyFrame = new IFrame(getOSBuddyLinkForItem(item));
+        osBuddyFrame.setWidthFull();
+        osBuddyFrame.setHeight("500px");
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.add(osBuddyFrame);
+        return layout;
+    }
+
+    private String getOSBuddyLinkForItem(GEItem item) {
+        return OSBUDDY_API_URL + "?id=" + item.getId();
     }
 
     private Grid<GEItem> initializeItemGrid(List<GEItem> items) {
@@ -85,12 +113,11 @@ public class MainView extends VerticalLayout {
     }
 
     private void openItem(GEItem item) {
-        String osBuddyURI = OSBUDDY_API_URL + "?id=" + item.getId();
-        UI.getCurrent().getPage().executeJavaScript("window.open(\"" + osBuddyURI + "\", \"_blank\", \"\");");
+        UI.getCurrent().getPage().executeJavaScript("window.open(\"" + getOSBuddyLinkForItem(item) + "\", \"_blank\", \"\");");
     }
 
     private void addDefaultColumn(Grid<GEItem> grid, ValueProvider<GEItem, ?> value, String columnName) {
-        grid.addColumn(value).setHeader(columnName).setResizable(true).setSortable(true);
+        grid.addColumn(value).setHeader(columnName).setKey(columnName).setResizable(true).setSortable(true);
     }
 
     private VerticalLayout setupLayout() {

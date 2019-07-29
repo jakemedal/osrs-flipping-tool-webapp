@@ -31,7 +31,11 @@ public class GEItemService {
         useProxy = true;
     }
 
-    public List<GEItem> generateFlipList(int maxItemPrice, int minPercentMargin) {
+    public List<GEItem> generateFlipList() throws ApiUrlConnectionException {
+        return generateFlipList(Integer.MAX_VALUE, 0);
+    }
+
+    public List<GEItem> generateFlipList(int maxItemPrice, int minPercentMargin) throws ApiUrlConnectionException {
 
         List<GEItem> result = new ArrayList<>();
         JSONObject itemSummary = getItemList(API_HOST_URL, useProxy);
@@ -64,6 +68,18 @@ public class GEItemService {
         }
 
         return result;
+    }
+
+    public List<GEItem> generateOfflineFlipList() {
+        List<GEItem> geItems = new ArrayList<>();
+        geItems.add(new GEItem("Foo", 1, 500, 550, 1000, 2000, true));
+        geItems.add(new GEItem("Bar", 2, 100, 750, 2000, 2000, true));
+        geItems.add(new GEItem("Baz", 3, 400, 550, 100, 5, true));
+        geItems.add(new GEItem("Quix", 4, 500, 550, 1000, 2000, true));
+        geItems.add(new GEItem("Will's dong", 1, Integer.MAX_VALUE, 122, 1000, 2000, true));
+        geItems.add(new GEItem("test1", 5, 500, 990, 2, 55, true));
+        geItems.add(new GEItem("test2", 6, 20000, 30000, 100, 200, true));
+        return geItems;
     }
 
     private int getProfitPercent(int buyAverage, int sellAverage) {
